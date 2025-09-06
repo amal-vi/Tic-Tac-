@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border: 2px solid #444;
+            font-size: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .cell:hover {
+            background: #eaeaea;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #reset {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            background: #4caf50;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #reset:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Tic Tac Toe (vs AI)</h1>
+    <div id="board"></div>
+    <div id="status">You are X. Your turn!</div>
+    <button id="reset">Restart</button>
+
+    <script>
+        const boardEl = document.getElementById("board");
+        const statusEl = document.getElementById("status");
+        const resetBtn = document.getElementById("reset");
+
+        let board = Array(9).fill(" ");
+        let gameOver = false;
+
+        const WIN_LINES = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],   // rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],   // columns
+            [0, 4, 8], [2, 4, 6]            // diagonals
+        ];
+
+        function renderBoard() {
+            boardEl.innerHTML = "";
+            board.forEach((val, i) => {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.textContent = val === " " ? "" : val;
+                cell.addEventListener("click", () => humanMove(i));
+                boardEl.appendChild(cell);
+            });
+        }
+
+        function winner(b) {
+            for (let [a, c, d] of WIN_LINES) {
+                if (b[a] !== " " && b[a] === b[c] && b[a] === b[d]) return b[a];
+            }
+            return null;
+        }
+
+        function full(b) {
+            return b.every(c => c !== " ");
+        }
+
+        function score(b, depth) {
+            let w = winner(b);
+            if (w === "O") return 10 - depth;
+            if (w === "X") return depth - 10;
+            return 0;
+        }
+
+        function minimax(b, depth, isMax, alpha, beta) {
+            let w = winner(b);
+            if (w || full(b)) return [score(b, depth), null];
+
+            let bestMove = null;
+            if (isMax) { // AI (O)
+                let bestVal = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === " ") {
+                        b[i] = "O";
+                        let [val] = minimax(b, depth + 1, false, alpha, beta);
+                        b[i] = " ";
+                        if (val > bestVal) {
+                            bestVal = val;
+                            bestMove = i;
+                        }
+                        alpha = Math.max(alpha, val);
+                        if (beta <= alpha) break;
+                    }
+                }
+                return [bestVal, bestMove];
+            } else { // Human (X)
+                let bestVal = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === " ") {
+                        b[i] = "X";
+                        let [val] = minimax(b, depth + 1, true, alpha, beta);
+                        b[i] = " ";
+                        if (val < bestVal) {
+                            bestVal = val;
+                            bestMove = i;
+                        }
+                        beta = Math.min(beta, val);
+                        if (beta <= alpha) break;
+                    }
+                }
+                return [bestVal, bestMove];
+            }
+        }
+
+        function aiMove() {
+        let [, move] = minimax(board, 0, true, -Infinity, Infinity);
+        return move;
+        }
+
+        function humanMove(i) {
+            if (gameOver || board[i] !== " ") return;
+            board[i] = "X";
+            renderBoard();
+            checkGame();
+
+            // ⛔ Stop here if game is over (so AI doesn't play after you win)
+            if (gameOver) return;
+
+            statusEl.textContent = "AI is thinking...";
+            setTimeout(() => {
+                let m = aiMove();
+                board[m] = "O";
+                renderBoard();
+                checkGame();
+            }, 1000);
+        }
+
+        function checkGame() {
+            let w = winner(board);
+            if (w) {
+                statusEl.textContent = w === "X" ? "You win! 🎉" : "AI wins! 🤖";
+                gameOver = true;
+                return;
+            }
+            if (full(board)) {
+                statusEl.textContent = "It's a draw. 🤝";
+                gameOver = true;
+                return;
+            }
+            statusEl.textContent = "Your turn!";
+        }
+
+        resetBtn.addEventListener("click", () => {
+            board = Array(9).fill(" ");
+            gameOver = false;
+            statusEl.textContent = "You are X. Your turn!";
+            renderBoard();
+        });
+
+        renderBoard();
+    </script>
+</body>
+
+</html>
